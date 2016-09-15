@@ -88,6 +88,6 @@ if __name__=='__main__':
 
             pylab.axis("off")
             pylab.pause(.1)
-            pylab.savefig("output/fig_%s.png"%str(i).zfill(4))
+            #pylab.savefig("output/fig_%s.png"%str(i).zfill(4))
 
 
