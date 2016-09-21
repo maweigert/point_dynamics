@@ -1,5 +1,7 @@
 output/
 output3/
 tmp/
+segm2/
+segm3/
 *.pyc
 .idea/

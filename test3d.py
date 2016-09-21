@@ -1,5 +1,5 @@
 import numpy as np
-from pointcloud3d import PointCloud3
+from pointcloud3 import PointCloud3
 
 if __name__=='__main__':
 

@@ -13,32 +13,8 @@ import numpy as np
 # import matplotlib.pyplot as plt
 
 from pointcloud import PointCloud
+from utils import orthogonal_vecs, perlin_ellipse3
 
-
-
-def orthogonal_vecs(rs, weigths=None):
-    """
-    do a pca on the point cloud, returning the main vectors
-
-    rs.shape = (N,ndim)
-
-    returns n, with n.shape = (ndim,ndim) and n[:,0] is the vector
-    along the smallest variation  and n[:,-1] along the biggest
-    """
-
-    if weigths is None:
-        weigths = np.ones(len(rs))
-
-    # rs = rs - np.mean(rs,0)
-    T = np.dot(rs.T*weigths, rs)
-    u, s, v = np.linalg.svd(T)
-
-    inds = np.argsort(s)
-
-    n = u[:, inds]
-    #n *= 1./(np.linalg.norm(n, axis = )+1.e-10)
-
-    return n, s[inds]
 
 
 
@@ -132,6 +108,74 @@ class PointCloud3(PointCloud):
         w.glWidget.refresh()
         QtGui.QApplication.instance().processEvents()
 
+
+
+    def create_signal_label(self, shape, extent=((-1,1),(-1,1),(-1,1)),
+                            scale = 3, intens = 100,
+                            poisson_noise = False,
+                            gaussian_noise = 0,
+                            blur_sigma= 0):
+
+        from spimagine.utils.transform_matrices import mat4_rotation
+        from gputools import convolve_sep3
+
+        signal = np.zeros(shape)
+        label = np.zeros(shape)
+
+
+        units = tuple([1.*(ext[1]-ext[0])/(s-1.) for s,ext in zip(shape, extent)])
+
+        _, indss = self.ktree.query(self._rs, min(len(self._rs), self._n_neighbors+1))
+
+        t_divides = self._divide_times()
+        for i, (r, t,t_divide, inds, id) in enumerate(zip(self._rs, self._ts, t_divides,indss, self._ids)):
+
+
+            neighs = self._rs[inds[1:]]
+            rs, m = self._ellipsoid_rs_mat(r-neighs)
+
+            #let young cells be smaller
+            fac = 1-.3*np.exp(-10.*t/t_divide)
+            rs *= fac
+
+
+            max_w = int(np.ceil(max([_b/_a for _a,_b in zip(units,rs[::-1])])))
+
+            ind_arr = [int(1.*(s-1)*(_x-ext[0])/(ext[1]-ext[0])) for ext, s, _x in zip(extent, shape, r[::-1])]
+
+
+            slice_mask = tuple([slice(j-int(max_w/2), j+int(max_w/2)) for j in ind_arr])
+
+            sig_part = signal[slice_mask]
+            label_part = label[slice_mask]
+
+
+            density, mask = perlin_ellipse3(sig_part.shape,
+                                            [.5*r/u for r, u in zip(rs[::-1],units)],
+                                            offset = .4,
+                                            shift = (id%np.pi+0.05*np.random.normal(0,1),)*3,
+                                            transform_m=m[:3,:3],
+                                            scale = scale)
+
+
+            sig_part[mask] = intens*density[mask]
+
+            label_part[mask] = id+1
+
+        if blur_sigma>0:
+            hx = np.exp(-np.arange(-2*blur_sigma,2*blur_sigma)/blur_sigma**2)
+            hx *= 1./np.sum(hx)
+            signal = convolve_sep3(signal,hx,hx, hx)
+
+
+        if poisson_noise:
+            signal = np.random.poisson(signal.astype(int))
+
+        if gaussian_noise>0:
+            signal = np.maximum(0,signal+gaussian_noise*np.random.normal(0,1,signal.shape))
+
+
+        return signal, label
 
 
 if __name__=='__main__':

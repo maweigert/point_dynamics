@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from pointcloud import PointCloud
-
+from utils import orthogonal_vecs, perlin_ellipse2
 
 
 def best_orthogonal(rs, weigths=None):
@@ -91,6 +91,9 @@ class PointCloud2(PointCloud):
 
         return w, h, angle
 
+
+
+
     def draw_ellipses(self, with_force = False, cmap = None, **kwargs):
 
         from matplotlib.patches import Ellipse
@@ -120,6 +123,65 @@ class PointCloud2(PointCloud):
                          self._Fs[:, 0], self._Fs[:, 1])
 
 
+    def create_signal_label(self, shape, extent=((-1,1),(-1,1)),
+                            scale = 10, intens = 100,
+                            poisson_noise = False,
+                            gaussian_noise = 0,
+                            blur_sigma= 0):
+
+        from spimagine.utils.transform_matrices import mat4_rotation
+        from gputools import convolve_sep2
+
+        signal = np.zeros(shape)
+        label = np.zeros(shape)
+
+
+        units = tuple([1.*(ext[1]-ext[0])/(s-1.) for s,ext in zip(shape, extent)])
+
+        _, indss = self.ktree.query(self._rs, min(len(self._rs), self._n_neighbors+1))
+
+        for i, (r, inds, id) in enumerate(zip(self._rs, indss, self._ids)):
+
+
+            neighs = self._rs[inds[1:]]
+            w, h, angle = self._ellipse_w_h_angle(r-neighs)
+
+
+            m = mat4_rotation(-angle/180*np.pi,0,0,1)[:2,:2].T
+
+            max_w = int(np.ceil(max([_b/_a for _a,_b in zip(units,(h,w))])))
+
+            ind_arr = [int(1.*(s-1)*(_x-ext[0])/(ext[1]-ext[0])) for ext, s, _x in zip(extent, shape, r[::-1])]
+            slice_mask = tuple([slice(j-int(max_w/2), j+int(max_w/2)) for j in ind_arr])
+
+            sig_part = signal[slice_mask]
+            label_part = label[slice_mask]
+
+            density, mask = perlin_ellipse2(sig_part.shape,(.5*h/units[0],.5*w/units[1]),
+                                            offset = .4,
+                                            shift = (id%np.pi+0.05*np.random.normal(0,1),id%np.pi+0.05*np.random.normal(0,1)),
+                                            transform_m=m,
+                                            scale = scale)
+
+
+            sig_part[mask] = intens*density[mask]
+
+            label_part[mask] = id+1
+
+        if blur_sigma>0:
+            hx = np.exp(-np.arange(-2*blur_sigma,2*blur_sigma)/blur_sigma**2)
+            hx *= 1./np.sum(hx)
+            signal = convolve_sep2(signal,hx,hx)
+
+
+        if poisson_noise:
+            signal = np.random.poisson(signal.astype(int))
+
+        if gaussian_noise>0:
+            signal = np.maximum(0,signal+gaussian_noise*np.random.normal(0,1,signal.shape))
+
+
+        return signal, label
 
 
 if __name__=='__main__':
