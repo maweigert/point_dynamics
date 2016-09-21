@@ -2,3 +2,4 @@ output/
 output3/
 tmp/
 *.pyc
+.idea/
