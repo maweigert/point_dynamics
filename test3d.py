@@ -1,36 +1,28 @@
 import numpy as np
-from scipy.spatial import KDTree, cKDTree
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.pyplot as plt
-from pointcloud import PointCloud3D
-
+from pointcloud3 import PointCloud3
 
 if __name__=='__main__':
-    # first on a circle
 
     np.random.seed(0)
 
-    R_circle = 1.
+    N = 20
 
-    R_cell = .07
-    n_points = 100
-
-    phi = np.random.uniform(0, 2*np.pi, n_points)
-    theta = np.arccos(np.random.uniform(-1, 1, n_points))
-
-    rs = (R_circle*np.stack([np.cos(phi)*np.sin(theta), np.sin(phi)*np.sin(theta), np.cos(theta)])).T
+    phi = np.random.uniform(0, 2.*np.pi, N)
+    t = np.arccos(np.random.uniform(-1, 1, N))
+    rs = 1.*np.stack([np.cos(phi)*np.sin(t), np.sin(phi)*np.sin(t), np.cos(t)]).T
 
 
-    # rs = np.random.uniform(-2,2,(n_points,3))
+    def a_func(t):
+        return 2*np.arctan(t/30.)/np.pi
+
 
     def bound_grad_limacon3(rs, t):
-        #a = 2.*np.arctan(t/2000.)/np.pi
-        a = 8.*np.arctan(t/100.)/np.pi
-
+        a = a_func(t)
         x, y, z = rs.T
 
         # the function
         u = (z**2+x**2+y**2+a*z)**2-(z**2+x**2+y**2)
+        u_norm = np.sign(u)*np.abs(u)**.5
 
         # the gradient
         dz = 2*(z**2+x**2+y**2+a*z)*(2.*z+a)-2.*z
@@ -38,34 +30,25 @@ if __name__=='__main__':
         dx = 2*(z**2+x**2+y**2+a*z)*2.*x-2.*x
 
         dr = np.stack([dx, dy, dz])
-        normed = np.sum(dr**2, 0)
+        normed = np.linalg.norm(dr, axis=0)
         dr *= 1./(1.e-8+normed)
 
-        return -(dr*u).T
+        return -(dr*u_norm).T
 
 
-    p = PointCloud3D(rs, bound_grad_limacon3, R_cell, t_divide=40.)
+    p = PointCloud3(rs, bound_grad_limacon3, .1, t_divide=15)
 
-    p.single_step(0.1)
-    fig = plt.figure()
+    from spimagine import volfig
+    from rand_cmap import rand_cmap
 
-    ax = fig.add_subplot(111, projection='3d')
-    plt.show()
+    cmap = rand_cmap(200, type="soft")
 
-    for i in xrange(500):
+    for i in xrange(1000):
         print i, p._t
-        # p.step(0.2, 10, random_v=0.01)
-        p.step(0.5, 10, random_v=0.01)
+        p.step(0.3, 20, random_v=0.01)
 
-        # for j in xrange(10):
-        #     p.single_step(0.02)
+        p.draw_spimagine(cmap=cmap)
 
-        ax.cla()
-        p.draw(with_force=False, s=10.)
-        ax.set_xlim(-2.5, 2.5)
-        ax.set_ylim(-2.5,2.5)
-        ax.set_zlim(-4, 1.)
-        ax._axis3don = False
-        ax.set_aspect('equal')
-        plt.pause(.1)
-        plt.savefig("output3/fig_%s.png"%str(i).zfill(4))
+        w = volfig(1, raise_window = False)
+        w.transform.setRotation(.006*i,0,1,0)
+        w.saveFrame("tmp/fig_%s.png"%str(i).zfill(4))

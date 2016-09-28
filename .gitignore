@@ -2,3 +2,7 @@ output/
 output3/
 *.pyc
 /.idea
+tmp/
+segm2/
+segm3/
+
