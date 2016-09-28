@@ -100,7 +100,7 @@ class PointCloud3(PointCloud):
                 col = (.9,1.,.2)
 
             ell = EllipsoidMesh(rs = rs,pos = r,facecolor = col, transform_mat = m,
-                                n_theta = 20, n_phi = 30)
+                                n_theta = 40, n_phi = 50)
 
             w.glWidget.add_mesh(ell)
 
@@ -161,6 +161,8 @@ class PointCloud3(PointCloud):
             sig_part[mask] = intens*density[mask]
 
             label_part[mask] = id+1
+
+        #print blur_sigma
 
         if blur_sigma>0:
             hx = np.exp(-np.arange(-2*blur_sigma,2*blur_sigma)/blur_sigma**2)

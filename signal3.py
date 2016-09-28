@@ -24,6 +24,7 @@ if __name__=='__main__':
     phi, t = P.flatten(), T.flatten()
 
     rs = .8*np.stack([np.cos(phi)*np.sin(t), np.sin(phi)*np.sin(t), np.cos(t)]).T
+    rs += .2*np.random.uniform(-1,1,rs.shape)
 
 
     # rs = [[0,0,0],[0,0,.4],[0,0,-.4],[.4,0,0],[-.4,0,0]]
@@ -35,7 +36,7 @@ if __name__=='__main__':
         # the gradient
         n = 1.*rs.T
         n /= 1.e-10+np.linalg.norm(n, axis=0)
-        return -5*(n*u).T
+        return -1*(n*u).T
 
 
     def bound_grad_basin(rs, t):
@@ -65,47 +66,64 @@ if __name__=='__main__':
         return -(dr*u).T
 
 
-    p = PointCloud3(rs, bound_grad_sphere, r_repell=.2, t_divide=2)
+    p = PointCloud3(rs, bound_grad_sphere, r_repell=.15, t_divide=18)
 
-    cmap = rand_cmap(300, type = "soft" , first_color_black=True)
+    #cmap = rand_cmap(300, type = "soft" , first_color_black=True)
+    cmap = rand_cmap(200, type = "soft", first_color_black=True)
 
+    # from time import time
+    # t = time()
+    # sig, label = p.create_signal_label(
+    #         (256,)*3,
+    #         extent=((-1.3, 1.3),)*3,
+    #         intens=100,
+    #         poisson_noise=True,
+    #         gaussian_noise=10,
+    #         blur_sigma=0)
+    #
+    # print time()-t
 
     w1, w2 = None, None
 
-    for i in xrange(10):
+    for i in xrange(2):
         print i, p._t
-        p.step(.6, 20, random_v=0.02)
+        p.step(.4, 20, random_v=0.02)
 
         sig, label = p.create_signal_label(
             (256,)*3,
             extent=((-1.3, 1.3),)*3,
             intens=100,
             poisson_noise=True,
-            gaussian_noise=10,
+            gaussian_noise=0,
             blur_sigma=1)
 
-        w1 = volfig(1,raise_window = False)
-        w1 = volshow(sig,raise_window = False)
-        w1.set_colormap("grays")
-        w1.transform.setBox(False)
-        w1.transform.setZoom(1.3)
 
-        # else:
-        #     w1.glWidget.renderer.update_data(sig.astype(np.float32))
+        if w1 is None:
+            w1 = volfig(1,raise_window = False)
+            w1 = volshow(sig,autoscale = False,raise_window = False)
+            w1.set_colormap("grays")
+            w1.transform.setBox(False)
+            w1.transform.setZoom(1.3)
+        else:
+            w1.glWidget.renderer.update_data(sig.astype(np.float32))
+            w1.glWidget.refresh()
 
-        w1.transform.setRotation(0.03*i,0,1,0)
+        w1.transform.setRotation(0.01*i,0,1,0)
         w1.saveFrame("segm3/signal_%s.png"%str(i).zfill(4))
 
-        w2 = volfig(2,raise_window = False)
-        w2 = volshow((label%cmap.N).astype(np.float32), autoscale = False, raise_window = False)
-        w2.glWidget._set_colormap_array(cmap(np.arange(cmap.N))[:,:3])
-        w2.transform.setBox(False)
-        w2.transform.setZoom(1.3)
+        if w2 is None:
+            w2 = volfig(2,raise_window = False)
+            w2 = volshow((label%cmap.N).astype(np.float32), autoscale = False, raise_window = False)
+            w2.transform.setMax(cmap.N-.5)
+            w2.transform.setMin(0)
+            w2.glWidget._set_colormap_array(cmap(np.arange(cmap.N))[:,:3])
+            w2.transform.setBox(False)
+            w2.transform.setZoom(1.3)
+        else:
+            w2.glWidget.renderer.update_data((label%cmap.N).astype(np.float32))
+            #w2.glWidget._set_colormap_array(cmap(np.arange(cmap.N))[:,:3])
+            w2.glWidget.refresh()
 
-        #
-        # else:
-        #     w2.glWidget.renderer.update_data((label%cmap.N).astype(np.float32))
-        #     w2.glWidget._set_colormap_array(cmap(np.arange(cmap.N))[:,:3])
 
-        w2.transform.setRotation(0.03*i,0,1,0)
+        w2.transform.setRotation(0.01*i,0,1,0)
         w2.saveFrame("segm3/label_%s.png"%str(i).zfill(4))
