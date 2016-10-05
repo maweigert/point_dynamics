@@ -133,8 +133,7 @@ class PointCloud2(PointCloud):
         from gputools import convolve_sep2
 
         signal = np.zeros(shape)
-        label = np.zeros(shape)
-
+        label = np.zeros(shape, dtype='int32') # default int is 64, but that's too deep for Fiji. 2^32 is big enough.
 
         units = tuple([1.*(ext[1]-ext[0])/(s-1.) for s,ext in zip(shape, extent)])
 

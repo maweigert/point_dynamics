@@ -51,4 +51,4 @@ if __name__=='__main__':
 
         w = volfig(1, raise_window = False)
         w.transform.setRotation(.006*i,0,1,0)
-        w.saveFrame("tmp/fig_%s.png"%str(i).zfill(4))
+        #w.saveFrame("tmp/fig_%s.png"%str(i).zfill(4))

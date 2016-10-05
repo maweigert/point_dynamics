@@ -33,7 +33,6 @@ if __name__=='__main__':
 
         return -(dr*u).T
 
-
     p = PointCloud2(rs, bound_grad_limacon, R_repell, t_divide=50)
 
     import matplotlib.pyplot as plt
@@ -55,7 +54,6 @@ if __name__=='__main__':
             plt.clf()
             p.draw_ellipses(cmap = cmap)
 
-
             p.save("output/positions_%s.dat"%str(i).zfill(4))
 
             plt.gca().set_aspect('equal')
@@ -65,6 +63,6 @@ if __name__=='__main__':
             plt.axis("off")
             plt.pause(.1)
 
-            #pylab.savefig("output/fig_%s.png"%str(i).zfill(4))
+            pylab.savefig("output/fig_%s.png"%str(i).zfill(4))
 
 

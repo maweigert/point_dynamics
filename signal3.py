@@ -71,21 +71,10 @@ if __name__=='__main__':
     #cmap = rand_cmap(300, type = "soft" , first_color_black=True)
     cmap = rand_cmap(200, type = "soft", first_color_black=True)
 
-    # from time import time
-    # t = time()
-    # sig, label = p.create_signal_label(
-    #         (256,)*3,
-    #         extent=((-1.3, 1.3),)*3,
-    #         intens=100,
-    #         poisson_noise=True,
-    #         gaussian_noise=10,
-    #         blur_sigma=0)
-    #
-    # print time()-t
 
     w1, w2 = None, None
 
-    for i in xrange(2):
+    for i in xrange(100):
         print i, p._t
         p.step(.4, 20, random_v=0.02)
 
@@ -94,7 +83,7 @@ if __name__=='__main__':
             extent=((-1.3, 1.3),)*3,
             intens=100,
             poisson_noise=True,
-            gaussian_noise=0,
+            gaussian_noise=10,
             blur_sigma=1)
 
 

@@ -1,3 +1,6 @@
+.DS_Store
+segm2_lab/
+segm2_sig/
 output/
 output3/
 *.pyc

@@ -39,7 +39,6 @@ if __name__=='__main__':
         return -.01*(n*np.sqrt(u)).T
 
 
-
     def bound_grad_limacon(rs, t):
         a = 2.*np.arctan(t/100.)/np.pi
         x = rs[:, 0]
@@ -59,30 +58,40 @@ if __name__=='__main__':
 
     p = PointCloud2(rs, bound_grad_limacon, r_repell=.1, t_divide=10)
 
-
     cmap  = rand_cmap(300, type = "soft", first_color_black=True)
 
+    # save using skimage to write grayscale (not RGB). Suppress low contrast UserWarning.
+    # use separate directories for different image types, allows drag n' drop stack opening in Fiji
+    import skimage.io as io
+    import warnings
 
-    for i in xrange(300):
-        print i, p._t
-        p.step(.2, 10, random_v=0.02)
-        sig, label = p.create_signal_label(
-            (1024, 1024),
-            #(128,128),
-            extent = ((-2,2),(-2,2)),
-            intens=100,
-            poisson_noise=True,
-            gaussian_noise=10,
-            blur_sigma=3)
+    with warnings.catch_warnings():
+        warnings.simplefilter("once")
 
-        # plt.subplot(1, 2, 1)
-        # plt.imshow(sig)
-        # plt.axis("off")
-        # plt.subplot(1, 2, 2)
-        #plt.imshow(label%cmap.N, cmap = cmap, vmin = 0, vmax = cmap.N-1)
-        #plt.axis("off")
+        for i in xrange(10):
+            print i, p._t
+            p.step(.2, 10, random_v=0.02)
+            sig, label = p.create_signal_label(
+                (1024, 1024),
+                #(128,128),
+                extent = ((-2,2),(-2,2)),
+                intens=100,
+                poisson_noise=True,
+                gaussian_noise=10,
+                blur_sigma=3)
 
-        plt.imsave("segm2/signal_%s.png"%str(i).zfill(4), sig)
-        plt.imsave("segm2/label_%s.png"%str(i).zfill(4), label%cmap.N, cmap = cmap, vmin = 0, vmax = cmap.N-1)
+            # plt.subplot(1, 2, 1)
+            # plt.imshow(sig)
+            # plt.axis("off")
+            # plt.subplot(1, 2, 2)
+            # plt.imshow(label%cmap.N, cmap = cmap, vmin = 0, vmax = cmap.N-1)
+            # plt.axis("off")
 
-        #plt.pause(.1)
+            # do simulation in Floats, bin into Int before saving (just like microscopes do!)
+            sig = np.array(sig, dtype='int16')
+            # label = np.array(label, dtype='int32')
+            io.imsave("segm2_sig/signal_%s.tiff"%str(i).zfill(4), sig)
+            io.imsave("segm2_lab/label_%s.tiff" % str(i).zfill(4), label)
+
+            # io.imsave("segm2_lab/label_%s.tiff"%str(i).zfill(4), label%cmap.N, cmap=cmap, vmin = 0, vmax = cmap.N-1)
+            #plt.pause(.1)
