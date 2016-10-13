@@ -38,7 +38,6 @@ def best_orthogonal(rs, weigths=None):
 
 
 
-
 class PointCloud2(PointCloud):
     """
     2d version of the PointCloud

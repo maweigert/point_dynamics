@@ -68,9 +68,9 @@ if __name__=='__main__':
     with warnings.catch_warnings():
         warnings.simplefilter("once")
 
-        for i in xrange(10):
+        for i in xrange(30):
             print i, p._t
-            p.step(.2, 10, random_v=0.02)
+            p.step(.8, 40, random_v=0.02)
             sig, label = p.create_signal_label(
                 (1024, 1024),
                 #(128,128),

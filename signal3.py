@@ -7,9 +7,34 @@ mweigert@mpi-cbg.de
 
 import numpy as np
 from pointcloud3 import PointCloud3
-import matplotlib.pyplot as plt
 from rand_cmap import rand_cmap
-from spimagine import volfig, volshow
+import skimage.io as io
+import os
+
+def open_in_spimagine(sig, label):
+    # move import inside
+    from spimagine import volfig, volshow
+    w1 = volfig(1,raise_window = False)
+    w1 = volshow(sig,autoscale = False,raise_window = False)
+    w1.set_colormap("grays")
+    w1.transform.setBox(False)
+    w1.transform.setZoom(1.3)
+
+    w1.transform.setRotation(0.01*i,0,1,0)
+
+    w2 = volfig(2,raise_window = False)
+    w2 = volshow((label%cmap.N).astype(np.float32), autoscale = False, raise_window = False)
+    w2.transform.setMax(cmap.N-.5)
+    w2.transform.setMin(0)
+    w2.glWidget._set_colormap_array(cmap(np.arange(cmap.N))[:,:3])
+    w2.transform.setBox(False)
+    w2.transform.setZoom(1.3)
+
+    w2.transform.setRotation(0.01*i,0,1,0)
+
+def safemkdirs(output_dir):
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
 if __name__=='__main__':
     from time import time
@@ -38,7 +63,6 @@ if __name__=='__main__':
         n /= 1.e-10+np.linalg.norm(n, axis=0)
         return -1*(n*u).T
 
-
     def bound_grad_basin(rs, t):
         # the gradient
 
@@ -46,7 +70,6 @@ if __name__=='__main__':
         u = np.linalg.norm(n, axis=0)
         n /= 1.e-10+u
         return -.01*(n*np.sqrt(u)).T
-
 
     def bound_grad_limacon(rs, t):
         a = 2.*np.arctan(t/100.)/np.pi
@@ -65,54 +88,35 @@ if __name__=='__main__':
 
         return -(dr*u).T
 
-
     p = PointCloud3(rs, bound_grad_sphere, r_repell=.15, t_divide=18)
 
     #cmap = rand_cmap(300, type = "soft" , first_color_black=True)
     cmap = rand_cmap(200, type = "soft", first_color_black=True)
 
+    sigdir = 'segm3_sig/'
+    labeldir = 'segm3_lab/'
+    safemkdirs(sigdir)
+    safemkdirs(labeldir)
 
-    w1, w2 = None, None
+    import warnings
 
-    for i in xrange(100):
-        print i, p._t
-        p.step(.4, 20, random_v=0.02)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
 
-        sig, label = p.create_signal_label(
-            (256,)*3,
-            extent=((-1.3, 1.3),)*3,
-            intens=100,
-            poisson_noise=True,
-            gaussian_noise=10,
-            blur_sigma=1)
+        for i in xrange(30):
+            print "Image number, simulation time:", i, p._t
+            p.step(.4, 20, random_v=0.02)
 
+            sig, label = p.create_signal_label(
+                (256,)*3,
+                extent=((-1.3, 1.3),)*3,
+                intens=100,
+                poisson_noise=True,
+                gaussian_noise=10,
+                blur_sigma=1)
 
-        if w1 is None:
-            w1 = volfig(1,raise_window = False)
-            w1 = volshow(sig,autoscale = False,raise_window = False)
-            w1.set_colormap("grays")
-            w1.transform.setBox(False)
-            w1.transform.setZoom(1.3)
-        else:
-            w1.glWidget.renderer.update_data(sig.astype(np.float32))
-            w1.glWidget.refresh()
+            sig = np.array(sig, dtype='int32')
+            io.imsave(sigdir + "signal_%s.tiff"%str(i).zfill(4), sig)
+            io.imsave(labeldir + "label_%s.tiff"%str(i).zfill(4), label)
 
-        w1.transform.setRotation(0.01*i,0,1,0)
-        w1.saveFrame("segm3/signal_%s.png"%str(i).zfill(4))
-
-        if w2 is None:
-            w2 = volfig(2,raise_window = False)
-            w2 = volshow((label%cmap.N).astype(np.float32), autoscale = False, raise_window = False)
-            w2.transform.setMax(cmap.N-.5)
-            w2.transform.setMin(0)
-            w2.glWidget._set_colormap_array(cmap(np.arange(cmap.N))[:,:3])
-            w2.transform.setBox(False)
-            w2.transform.setZoom(1.3)
-        else:
-            w2.glWidget.renderer.update_data((label%cmap.N).astype(np.float32))
-            #w2.glWidget._set_colormap_array(cmap(np.arange(cmap.N))[:,:3])
-            w2.glWidget.refresh()
-
-
-        w2.transform.setRotation(0.01*i,0,1,0)
-        w2.saveFrame("segm3/label_%s.png"%str(i).zfill(4))
+    # open_in_spimagine(sig, label)
