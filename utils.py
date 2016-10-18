@@ -50,7 +50,8 @@ def perlin_ellipse2(shape=(21, 21), rs=(5, 5), transform_m=np.identity(2),
 
     mask = (np.sum([X**2/r**2 for X, r in zip(Xs, rs)], axis=0)<1)
 
-    p = noise.perlin2(shape, scale=scale, shift = shift)
+    # switch from (z,y,x) to (x,y,z) order when calling down to gputools
+    p = noise.perlin2(shape[::-1], scale=scale, shift = shift)
 
     p = (p-np.amin(p))/(np.amax(p)-np.amin(p))
 
@@ -71,7 +72,8 @@ def perlin_ellipse3(shape=(21, 21, 21), rs=(5, 5, 5), transform_m=np.identity(3)
 
     mask = (np.sum([X**2/r**2 for X, r in zip(Xs, rs)], axis=0)<1)
 
-    p = noise.perlin3(shape, scale=scale, shift = shift)
+    # switch from (z,y,x) to (x,y,z) order when calling down to gputools
+    p = noise.perlin3(shape[::-1], scale=scale, shift = shift)
 
     p = (p-np.amin(p))/(np.amax(p)-np.amin(p))
 

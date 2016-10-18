@@ -29,7 +29,6 @@ def open_in_spimagine(sig, label):
     w2.glWidget._set_colormap_array(cmap(np.arange(cmap.N))[:,:3])
     w2.transform.setBox(False)
     w2.transform.setZoom(1.3)
-
     w2.transform.setRotation(0.01*i,0,1,0)
 
 def safemkdirs(output_dir):
@@ -41,16 +40,16 @@ if __name__=='__main__':
 
     np.random.seed(0)
     rs = np.random.uniform(-1., 1., (40, 3))
+    rs[:,2] /= 20.0
 
-    N = 5
-    phi = np.linspace(0, 2*np.pi, N+1)[:N]
-    t = np.arccos(np.linspace(-1, 1, N+2)[1:-1])
-    P, T = np.meshgrid(phi, t, indexing="ij")
-    phi, t = P.flatten(), T.flatten()
-
-    rs = .8*np.stack([np.cos(phi)*np.sin(t), np.sin(phi)*np.sin(t), np.cos(t)]).T
-    rs += .2*np.random.uniform(-1,1,rs.shape)
-
+    # N = 5
+    # phi = np.linspace(0, 2*np.pi, N+1)[:N]
+    # t = np.arccos(np.linspace(-1, 1, N+2)[1:-1])
+    # P, T = np.meshgrid(phi, t, indexing="ij")
+    # phi, t = P.flatten(), T.flatten()
+    #
+    # rs = .8*np.stack([np.cos(phi)*np.sin(t), np.sin(phi)*np.sin(t), np.cos(t)]).T
+    # rs += .2*np.random.uniform(-1,1,rs.shape)
 
     # rs = [[0,0,0],[0,0,.4],[0,0,-.4],[.4,0,0],[-.4,0,0]]
 
@@ -88,22 +87,38 @@ if __name__=='__main__':
 
         return -(dr*u).T
 
-    p = PointCloud3(rs, bound_grad_sphere, r_repell=.15, t_divide=18)
+    def bound_grad_box(rs,t):
+        x = rs[:,0]
+        y = rs[:,1]
+        z = rs[:,2]
+        dx = np.zeros(x.shape)
+        dx[np.where(x>0.8)] = -1.0
+        dx[np.where(x<-0.8)] = 1.0
+        dy = np.zeros(y.shape)
+        dy[np.where(y > 0.8)] = -1.0
+        dy[np.where(y < -0.8)] = 1.0
+        dz = np.zeros(z.shape)
+        dz[np.where(z > 0.1)] = -1.0
+        dz[np.where(z < -0.1)] = 1.0
+        dr = np.stack([dx,dy,dz])
+        return dr.T
 
-    #cmap = rand_cmap(300, type = "soft" , first_color_black=True)
-    cmap = rand_cmap(200, type = "soft", first_color_black=True)
+    p = PointCloud3(rs, bound_grad_box, r_repell=.1, t_divide=10)
 
-    sigdir = 'segm3_sig/'
-    labeldir = 'segm3_lab/'
+    # cmap = rand_cmap(300, type = "soft" , first_color_black=True)
+    # cmap = rand_cmap(200, type = "soft", first_color_black=True)
+
+    sigdir = 'data3d/t2/signal/'
+    labdir = 'data3d/t2/label/'
     safemkdirs(sigdir)
-    safemkdirs(labeldir)
+    safemkdirs(labdir)
 
     import warnings
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
 
-        for i in xrange(30):
+        for i in xrange(40):
             print "Image number, simulation time:", i, p._t
             p.step(.4, 20, random_v=0.02)
 
@@ -116,7 +131,8 @@ if __name__=='__main__':
                 blur_sigma=1)
 
             sig = np.array(sig, dtype='int32')
-            io.imsave(sigdir + "signal_%s.tiff"%str(i).zfill(4), sig)
-            io.imsave(labeldir + "label_%s.tiff"%str(i).zfill(4), label)
+            io.imsave(sigdir + "signal_%s.tif"%str(i).zfill(4), sig)
+            io.imsave(labdir + "label_%s.tif"%str(i).zfill(4), label)
+
 
     # open_in_spimagine(sig, label)

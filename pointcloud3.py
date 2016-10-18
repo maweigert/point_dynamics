@@ -129,26 +129,28 @@ class PointCloud3(PointCloud):
 
         t_divides = self._divide_times()
         for i, (r, t,t_divide, inds, id) in enumerate(zip(self._rs, self._ts, t_divides,indss, self._ids)):
-
-
             neighs = self._rs[inds[1:]]
             rs, m = self._ellipsoid_rs_mat(r-neighs)
 
-            #let young cells be smaller
+            # let young cells be smaller
             fac = 1-.3*np.exp(-10.*t/t_divide)
             rs *= fac
 
-
+            # maximum width, so we don't draw on top of our neighbors.
             max_w = int(np.ceil(max([_b/_a for _a,_b in zip(units,rs[::-1])])))
 
             ind_arr = [int(1.*(s-1)*(_x-ext[0])/(ext[1]-ext[0])) for ext, s, _x in zip(extent, shape, r[::-1])]
 
-
-            slice_mask = tuple([slice(j-int(max_w/2), j+int(max_w/2)) for j in ind_arr])
+            # add max(0, x) to prevent starting slice with negative index, which causes mask to return empty array.
+            slice_mask = tuple([slice(max(0, j-int(max_w/2)), j+int(max_w/2)) for j in ind_arr])
 
             sig_part = signal[slice_mask]
             label_part = label[slice_mask]
 
+            # This should never happen, or we'll fail to draw a nucleus this frame.
+            if sig_part.size==0:
+                print "Nucleus {} out of bounds!".format(i)
+                continue
 
             density, mask = perlin_ellipse3(sig_part.shape,
                                             [.5*r/u for r, u in zip(rs[::-1],units)],
@@ -168,7 +170,6 @@ class PointCloud3(PointCloud):
             hx = np.exp(-np.arange(-2*blur_sigma,2*blur_sigma)/blur_sigma**2)
             hx *= 1./np.sum(hx)
             signal = convolve_sep3(signal,hx,hx, hx)
-
 
         if poisson_noise:
             signal = np.random.poisson(signal.astype(int))

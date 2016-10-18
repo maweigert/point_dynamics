@@ -1,11 +1,15 @@
 .DS_Store
+
+*.pyc
+
 segm2_lab/
 segm2_sig/
 output/
 output3/
-*.pyc
-/.idea
+.idea/
 tmp/
 segm2/
 segm3/
+data2d/
+data3d/
 

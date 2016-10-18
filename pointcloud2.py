@@ -147,13 +147,21 @@ class PointCloud2(PointCloud):
 
             m = mat4_rotation(-angle/180*np.pi,0,0,1)[:2,:2].T
 
+            # maximum width, so we don't draw on top of our neighbors.
             max_w = int(np.ceil(max([_b/_a for _a,_b in zip(units,(h,w))])))
 
             ind_arr = [int(1.*(s-1)*(_x-ext[0])/(ext[1]-ext[0])) for ext, s, _x in zip(extent, shape, r[::-1])]
-            slice_mask = tuple([slice(j-int(max_w/2), j+int(max_w/2)) for j in ind_arr])
+
+            # add max(0, x) to prevent starting slice with negative index, which causes mask to return empty array.
+            slice_mask = tuple([slice(max(0, j-int(max_w/2)), j+int(max_w/2)) for j in ind_arr])
 
             sig_part = signal[slice_mask]
             label_part = label[slice_mask]
+
+            # This should never happen, or we'll fail to draw a nucleus this frame.
+            if sig_part.size == 0:
+                print "Nucleus {} out of bounds!".format(i)
+                continue
 
             density, mask = perlin_ellipse2(sig_part.shape,(.5*h/units[0],.5*w/units[1]),
                                             offset = .4,
